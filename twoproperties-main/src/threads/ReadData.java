@@ -6,21 +6,19 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import data.*;
+import data.Robot;
 
 public class ReadData implements Runnable {
 
-    URL url = null;
-    HttpURLConnection conn = null;
-    InputStreamReader isr = null;
-    BufferedReader br = null;
-
-    String s = null;
+    private URL url = null;
+    private HttpURLConnection conn = null;
+    private InputStreamReader isr = null;
+    private BufferedReader br = null;
 
     @Override
     public void run() {
 
-        while (Robot.getRun() == 1) {
+        while (Robot.isProgramRunning()) {
 
             try {
                 Thread.sleep(500);
@@ -29,7 +27,6 @@ public class ReadData implements Runnable {
             }
 
             try {
-                // Your laptop web service IP
                 url = new URL("http://172.20.10.4:8080/rest/lego/getvalues");
 
                 conn = (HttpURLConnection) url.openConnection();
@@ -37,44 +34,42 @@ public class ReadData implements Runnable {
                 conn.setConnectTimeout(3000);
                 conn.setReadTimeout(3000);
 
-                InputStream is = null;
+                InputStream is = conn.getInputStream();
 
-                try {
-                    is = conn.getInputStream();
-                } catch (Exception e) {
-                    System.out.println("Cannot get InputStream!");
-                    e.printStackTrace();
-                }
+                isr = new InputStreamReader(is);
+                br = new BufferedReader(isr);
 
-                if (is != null) {
-                    isr = new InputStreamReader(is);
-                    br = new BufferedReader(isr);
+                String s;
 
-                    while ((s = br.readLine()) != null) {
+                while ((s = br.readLine()) != null) {
 
-                        System.out.println("Data from server: " + s);
+                    System.out.println("Data from server: " + s);
 
-                        String[] values = s.split("#");
+                    String[] values = s.split("#");
 
-                        // Your web service returns:
-                        // run#speed#turn#mode#obstacleLimit#avoidAction
-                        if (values.length >= 3) {
-                            Robot.setRun(values[0]);
-                            Robot.setSpeed(values[1]);
-                            Robot.setTurn(values[2]);
-                        }
+                    // Format:
+                    // run#speed#turn#mode#obstacleLimit#avoidAction
+                    if (values.length >= 6) {
+                        Robot.setRun(values[0]);
+                        Robot.setSpeed(values[1]);
+                        Robot.setTurn(values[2]);
+                        Robot.setMode(values[3]);
+                        Robot.setObstacleLimit(values[4]);
+                        Robot.setAvoidAction(values[5]);
                     }
-
-                    br.close();
-                    isr.close();
-                    is.close();
                 }
 
+                br.close();
+                isr.close();
+                is.close();
                 conn.disconnect();
 
             } catch (Exception e) {
+                System.out.println("Cannot connect to web service.");
                 e.printStackTrace();
-                System.out.println("Some problem connecting to web service!");
+
+                // Safety: stop motors if connection is lost
+                Robot.setRun(0);
             }
         }
     }
