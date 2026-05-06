@@ -1,0 +1,1 @@
+"C:\Program Files (x86)\Java\jdk1.7.0_80\bin\javac" -classpath ..\lib\ev3classes.jar .\app\*.java .\data\*.java .\threads\*.java

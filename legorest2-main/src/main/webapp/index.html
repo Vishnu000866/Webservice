@@ -1,259 +1,161 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
-  <head>
-    <meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
     <title>Lego Robot Control</title>
-     <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: Arial, Helvetica, sans-serif;
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f5f7;
+            margin: 0;
+            padding: 30px;
+        }
+
+        h1 {
+            color: #222;
+        }
+
+        .box {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+
+        button {
+            padding: 12px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button.stop {
+            background: #dc2626;
+        }
+
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            width: 120px;
+        }
+
+        pre {
+            background: #111827;
+            color: #d1fae5;
+            padding: 15px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Lego Robot Web Service Control</h1>
+
+    <div class="box">
+        <h2>Robot Settings</h2>
+
+        <label>Speed:</label>
+        <input type="number" id="speed" value="150">
+
+        <label>Mode:</label>
+        <select id="mode">
+            <option value="0">Free driving</option>
+            <option value="1">Line following</option>
+        </select>
+
+        <label>Obstacle limit cm:</label>
+        <input type="number" id="obstacleLimit" value="20">
+
+        <label>Avoid action:</label>
+        <select id="avoidAction">
+            <option value="0">Stop</option>
+            <option value="1">Turn</option>
+            <option value="2">Reverse</option>
+        </select>
+
+        <br><br>
+
+        <button onclick="sendCommand(1, 0)">Forward</button>
+        <button onclick="sendCommand(1, 1)">Left</button>
+        <button onclick="sendCommand(1, 2)">Right</button>
+        <button onclick="sendCommand(1, 3)">Backward</button>
+        <button class="stop" onclick="sendCommand(0, 0)">Stop</button>
+    </div>
+
+    <div class="box">
+        <h2>Current Settings</h2>
+        <pre id="settings">No settings yet</pre>
+    </div>
+
+    <div class="box">
+        <h2>Latest Robot Data</h2>
+        <pre id="robotdata">No robot data yet</pre>
+    </div>
+
+    <div class="box">
+        <h2>Statistics</h2>
+        <pre id="statistics">No statistics yet</pre>
+    </div>
+
+<script>
+    function sendCommand(runValue, turnValue) {
+        let lego = {
+            run: runValue,
+            speed: Number(document.getElementById("speed").value),
+            turn: turnValue,
+            mode: Number(document.getElementById("mode").value),
+            obstacleLimit: Number(document.getElementById("obstacleLimit").value),
+            avoidAction: Number(document.getElementById("avoidAction").value)
+        };
+
+        fetch("/rest/lego/setvalues", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(lego)
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("settings").textContent = JSON.stringify(data, null, 2);
+            loadData();
+        })
+        .catch(error => {
+            document.getElementById("settings").textContent = "Error: " + error;
+        });
     }
 
-    body {
-      min-height: 100vh;
-      background: linear-gradient(135deg, #1e3c72, #2a5298);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 30px;
-      color: #222;
+    function loadData() {
+        fetch("/rest/lego/currentsettings")
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("settings").textContent = JSON.stringify(data, null, 2);
+        });
+
+        fetch("/rest/lego/robotdata")
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("robotdata").textContent = JSON.stringify(data, null, 2);
+        });
+
+        fetch("/rest/lego/statistics")
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById("statistics").textContent = data;
+        });
     }
 
-    .container {
-      width: 100%;
-      max-width: 900px;
-      background: #ffffff;
-      border-radius: 22px;
-      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
-      overflow: hidden;
-    }
+    setInterval(loadData, 2000);
+    loadData();
+</script>
 
-    .header {
-      background: #111827;
-      color: white;
-      padding: 30px;
-      text-align: center;
-    }
-
-    .header h1 {
-      font-size: 34px;
-      margin-bottom: 8px;
-    }
-
-    .header p {
-      color: #d1d5db;
-      font-size: 16px;
-    }
-
-    .content {
-      padding: 30px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 25px;
-    }
-
-    .card {
-      background: #f9fafb;
-      border-radius: 18px;
-      padding: 25px;
-      border: 1px solid #e5e7eb;
-    }
-
-    .card h2 {
-      font-size: 22px;
-      margin-bottom: 18px;
-      color: #111827;
-    }
-
-    .robot-display {
-      text-align: center;
-      grid-column: span 2;
-    }
-
-    .robot-icon {
-      font-size: 70px;
-      margin-bottom: 10px;
-    }
-
-    .status {
-      display: inline-block;
-      margin-top: 10px;
-      padding: 8px 16px;
-      border-radius: 20px;
-      background: #dcfce7;
-      color: #166534;
-      font-weight: bold;
-      font-size: 14px;
-    }
-
-    .controls {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-    }
-
-    button {
-      border: none;
-      padding: 15px;
-      border-radius: 14px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: 0.2s ease;
-      color: white;
-    }
-
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
-    }
-
-    .btn-speed {
-      background: #2563eb;
-    }
-
-    .btn-turn {
-      background: #7c3aed;
-    }
-
-    .btn-start {
-      background: #16a34a;
-    }
-
-    .btn-stop {
-      background: #dc2626;
-    }
-
-    .value-box {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-top: 15px;
-    }
-
-    .value {
-      background: white;
-      padding: 15px;
-      border-radius: 14px;
-      text-align: center;
-      border: 1px solid #e5e7eb;
-    }
-
-    .value span {
-      display: block;
-      font-size: 13px;
-      color: #6b7280;
-      margin-bottom: 5px;
-    }
-
-    .value strong {
-      font-size: 22px;
-      color: #111827;
-    }
-
-    pre {
-      background: #111827;
-      color: #22c55e;
-      padding: 18px;
-      border-radius: 14px;
-      overflow-x: auto;
-      font-size: 14px;
-      min-height: 110px;
-    }
-
-    .full {
-      grid-column: span 2;
-    }
-
-    @media (max-width: 700px) {
-      .content {
-        grid-template-columns: 1fr;
-      }
-
-      .robot-display,
-      .full {
-        grid-column: span 1;
-      }
-
-      .controls {
-        grid-template-columns: 1fr;
-      }
-
-      .value-box {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
-  </head>
-
-  <body>
-  <script>
-  var lego=new Object();
-  lego.id=1;
-  lego.run=1;
-  lego.speed=0;
-  lego.turn=0;
-  lego.aika=0;
-  function sendData(form){
-		// lego.speed=form.speed.value;
-		var json=JSON.stringify(lego);
-		var xhttp = new XMLHttpRequest();
-		document.getElementById("setvalues").innerHTML=json;
-		xhttp.onreadystatechange = function() {
-		  if (this.readyState == 4 && this.status == 200) {
-		   var settings=JSON.parse(this.responseText);
-		   document.getElementById("settings").innerHTML="ID="+settings.id+" Run="+settings.run+" Speed="+settings.speed+" Turn="+settings.turn;
-		  }
-		};
-		
-		xhttp.open("POST","/rest/lego/setvalues",true);
-		xhttp.setRequestHeader("Content-type","application/json");
-		xhttp.send(json);
-	}
-  function turnLeft(form){
-	  lego.turn=lego.turn-10;
-	  sendData(form);
-  }
-  function turnRight(form){
-	  lego.turn=lego.turn+10;
-	  sendData(form);
-  }
-  function stoplego(form){
-	  lego.run=0;
-	  sendData(form);
-  }
-  function startlego(form){
-	  lego.run=1;
-	  sendData(form);
-  }
-  function goFaster(form){
-	  lego.speed=lego.speed+10;
-	  sendData(form);
-  }
-  function goSlower(form){
-	  lego.speed=lego.speed-10;
-	  sendData(form);
-  }
-  </script>
-    <h1>Lego Settings!</h1>
-	<h3>Lego</h3>
-	<p id='lego'>
-	</p>
-	<h3>New values</h3>
-	<form id='legoform'>
-	<!-- Speed: <input type='text' name='speed' value=''><br> -->
-	<input type='button' name='slower' value='Slower' onclick='goSlower(this.form);'>
-	<input type='button' name='faster' value='faster' onclick='goFaster(this.form);'>
-	<input type='button' name='left' value='Left' onclick='turnLeft(this.form);'>
-	<input type='button' name='right' value='Right' onclick='turnRight(this.form);'>
-	<input type='button' name='stop' value='STOP' onclick='stoplego(this.form);'>
-	<input type='button' name='start' value='START' onclick='startlego(this.form);'>
-	<!-- <input type='button' name='ok' value='OK' onclick='sendData(this.form);'> -->
-	</form>
-	<p id='settings'>
-	</p>
-	<p id="setvalues">...end...</p>
-  </body>
+</body>
 </html>

@@ -1,0 +1,1 @@
+"C:\Program Files (x86)\Java\jdk1.7.0_80\bin\jar" -cfe legoapp.jar app.LegoApp ..\lib\ev3classes.jar .\app .\data .\threads
