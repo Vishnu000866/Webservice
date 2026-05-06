@@ -108,13 +108,13 @@
 <script>
     function sendCommand(runValue, turnValue) {
         let lego = {
-            run: runValue,
-            speed: Number(document.getElementById("speed").value),
-            turn: turnValue,
-            mode: Number(document.getElementById("mode").value),
-            obstacleLimit: Number(document.getElementById("obstacleLimit").value),
-            avoidAction: Number(document.getElementById("avoidAction").value)
-        };
+        run: runValue,
+        speed: Math.min(100, Math.max(0, Number(document.getElementById("speed").value))),
+        turn: turnValue,
+        mode: Number(document.getElementById("mode").value),
+        obstacleLimit: Number(document.getElementById("obstacleLimit").value),
+        avoidAction: Number(document.getElementById("avoidAction").value)
+    };
 
         fetch("/rest/lego/setvalues", {
             method: "POST",
