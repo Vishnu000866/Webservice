@@ -1,1 +1,1 @@
-"C:\Program Files\Java\jdk1.7.0_80\bin\jar.exe" cfe ..\legoapp.jar app.LegoApp app\*.class data\*.class threads\*.class
+"C:\Program Files\Java\jdk1.7.0_80\bin\jar.exe" cfe ..\gedoapp.jar app.LegoApp app\*.class data\*.class threads\*.class
