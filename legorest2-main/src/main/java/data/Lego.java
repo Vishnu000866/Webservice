@@ -19,7 +19,7 @@ public class Lego {
  	private String source;    // Source tells if data came from web UI or robot
 
 
-
+    private String status; // status of lego (active/inactive)
 	private int run;
 	private int speed;
 	private int turn;
